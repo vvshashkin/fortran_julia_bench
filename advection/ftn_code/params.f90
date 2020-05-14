@@ -15,10 +15,10 @@ contains
         params%N  = N
         params%dx = 1._8/N
 
-        allocate(params%u(N,N))
-        allocate(params%v(N,N))
-        params%u(1:N,1:N) = 1._8
-        params%v(1:N,1:N) = 1._8
+        allocate(params%u(0:N,1:N))
+        allocate(params%v(1:N,0:N))
+        params%u(0:N,1:N) = 1._8
+        params%v(1:N,0:N) = 1._8
     end function init_params
 
     function init_f(params) result(f)

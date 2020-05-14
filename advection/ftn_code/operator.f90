@@ -105,19 +105,51 @@ contains
         class(stvec_t),  intent(in)    :: fin
         class(params_t), intent(in)    :: params
 
-        real(kind=8)     :: q(0:params%N, 0:params%N)
+        real(kind=8)     :: q(0:params%N+1, 0:params%N+1)
+        real(kind=8)     :: flx(0:params%N,params%N)
+        real(kind=8)     :: fly(params%N,0:params%N)
         integer(kind=4)  :: N, i, j
 
         N = params%N
-        q(1:N,1:N) = fin%p(1:N,1:N)
-        q(1:N,0) = q(1:N,N)
-        q(0,0:N) = q(N,0:N)
+        call periodic_bc(q,fin%p,N,1)
+
+        do j=1,N
+            do i=0,N
+                flx(i,j) = up1(q(i:i+1,j),params%u(i,j))
+            end do
+        end do
+        do j=0,N
+            do i=1,N
+                fly(i,j) = up1(q(i,j:j+1),params%v(i,j))
+            end do
+        end do
+
         do j=1,N
             do i=1,N
-                fout%p(i,j) =-(params%u(i,j)*(q(i,j)-q(i-1,j))+ &
-                              params%v(i,j)*(q(i,j)-q(i,j-1)))/params%dx
+                fout%p(i,j) =-(flx(i,j)-flx(i-1,j)+fly(i,j)-fly(i,j-1))/params%dx
             end do
         end do
     end subroutine flux_conv
+
+    real(kind=8) function up1(q,u) result(fl)
+        real(kind=8), intent(in) :: q(2), u
+        real(kind=8)             :: za1, za2
+
+        za1 = .5_8+sign(.5_8,u)
+        za2 = 1._8-za1
+        fl = za1*q(1)+za2*q(2)
+    end function up1
+
+    subroutine periodic_bc(q,f,N,m)
+        real(kind=8),    intent(out) :: q(-m+1:N+m,-m+1:N+m)
+        real(kind=8),    intent(in)  :: f(1:N,1:N)
+        integer(kind=4), intent(in)  :: N, m
+
+        q(1:N,1:N)     = f(1:N,1:N)
+        q(1:N,-m+1:0)  = q(1:N,N-m+1:N)
+        q(1:N,N+1:N+m) = q(1:N,1:m)
+        q(-m+1:0,-m+1:N+m)  = q(N-m+1:N,-m+1:N+m)
+        q(N+1:N+m,-m+1:N+m)  = q(1:m,-m+1:N+m)
+    end subroutine periodic_bc
 
 end module operator_mod
