@@ -1,0 +1,6 @@
+&prm
+  N=1000,
+  dt = 0.0005,
+  Nstep = 200,
+  time_scheme = "rk4_opt"
+  /

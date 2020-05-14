@@ -11,20 +11,34 @@ program advection_test
     class(timescheme_abstract_t), allocatable :: ts
     class(operator_t),            allocatable :: oper
 
-    real(kind=8), parameter    :: dt = 0.001_8
-    integer(kind=4), parameter :: N = 1000
-    integer(kind=4)            :: it
+    real(kind=8)    :: dt = 0.0005_8
+    integer(kind=4) :: N = 1000
+    integer(kind=4) :: Nstep = 100
+    character(256)  :: time_scheme = "rk4_opt"
+    integer(kind=4) :: it
+
+    namelist /prm/ N, dt, Nstep, time_scheme
+
+    open(117,file="namelist", form="formatted")
+    read(117,prm)
+    close(117)
 
     params = init_params(N)
 
     call init_stvec(f1,params%N,init_f(params))
     print *, maxval(f1%p), minval(f1%p)
 
-    oper=adv_oper_t()
-    !ts = rk4_t(oper)
-    call init_rk4opt(ts, oper, f1)
+    oper = adv_oper_t()
+    if(trim(time_scheme) == "rk4_opt") then
+        call init_rk4opt(ts, oper, f1)
+    else if(trim(time_scheme) == "rk4") then
+        ts = rk4_t(oper)
+    else
+        print *, "unknown time-scheme: ", trim(time_scheme)
+        stop
+    end if
 
-    do it = 1,100
+    do it = 1,Nstep
         call ts%step(f1,params,dt)
     end do
 
