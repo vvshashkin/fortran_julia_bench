@@ -11,7 +11,7 @@ program advection_test
     class(timescheme_abstract_t), allocatable :: ts
     class(operator_t),            allocatable :: oper
 
-    real(kind=8), parameter    :: dt = 1.5_8
+    real(kind=8), parameter    :: dt = 0.001_8
     integer(kind=4), parameter :: N = 1000
     integer(kind=4)            :: it
 
@@ -28,6 +28,6 @@ program advection_test
         call ts%step(f1,params,dt)
     end do
 
-    print *, maxval(f1%p) -exp(-0.1_8*it*dt)
+    print *, maxval(f1%p)! -exp(-0.1_8*it*dt)
 
 end program advection_test
