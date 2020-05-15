@@ -1,8 +1,8 @@
 program advection_test
     use params_mod,      only : params_t, init_params, init_f
     use stvec_mod,       only : stvec_t, init_stvec
-    use timescheme_mod,  only : timescheme_abstract_t, rk4_t, init_rk4opt
-    use operator_mod,    only : operator_t, adv_oper_t
+    use timescheme_mod,  only : timescheme_abstract_t, rk4_t, init_rk4opt, init_rk4
+    use operator_mod,    only : operator_t, adv_oper_t, init_adv_operator
 
     implicit none
 
@@ -28,11 +28,12 @@ program advection_test
     call init_stvec(f1,params%N,init_f(params))
     print *, maxval(f1%p), minval(f1%p)
 
-    oper = adv_oper_t()
+    oper = init_adv_operator("namelist")!adv_oper_t()
     if(trim(time_scheme) == "rk4_opt") then
         call init_rk4opt(ts, oper, f1)
     else if(trim(time_scheme) == "rk4") then
-        ts = rk4_t(oper)
+        !ts = rk4_t(oper)
+        call init_rk4(ts, oper, f1)
     else
         print *, "unknown time-scheme: ", trim(time_scheme)
         stop

@@ -39,6 +39,18 @@ end type rk4opt_t
 
 contains
 
+subroutine init_rk4(ts_rk4,oper,f0)
+    class(timescheme_abstract_t), allocatable, intent(out) :: ts_rk4
+    class(operator_t),       intent(in)  :: oper
+    class(stvec_abstract_t), intent(in)  :: f0
+
+    allocate(rk4_t :: ts_rk4)
+    select type(ts_rk4)
+    class is (rk4_t)
+        ts_rk4%oper = oper
+    end select
+end subroutine init_rk4
+
 subroutine init_rk4opt(ts_rk4,oper,f0)
     class(timescheme_abstract_t), allocatable, intent(out) :: ts_rk4
     class(operator_t),       intent(in)  :: oper
