@@ -39,6 +39,7 @@ module operator_mod
     type, extends(operator_t) :: adv_oper_t
         integer(kind=4)                     :: hw
         procedure(clflux), pointer, nopass  :: fluxfun
+        character(:), allocatable           :: flux_scheme_name
         contains
         procedure act_fun => adv_oper_fun
         procedure act_sub => adv_oper_sub
@@ -67,11 +68,14 @@ contains
             stop
         end if
 
+        op%flux_scheme_name = trim(flux_scheme_name)
+
     end function init_adv_operator
 
     subroutine adv_oper_sub(this, fout, fin, params)
 
         use stvec_mod, only: stvec_t
+        use flux_mod,  only: up1f,up4f
 
         class(adv_oper_t),       intent(in)    :: this
         class(stvec_abstract_t), intent(inout) :: fout
@@ -85,7 +89,13 @@ contains
         select type (fin)
         class is (stvec_t)
             !call flux_conv(fout%p, fin%p, params, this%fluxfun, this%hw)
-            call flux_conv(fout%p, fin%p, params, this%fluxfun, maxhw)
+            !call flux_conv(fout%p, fin%p, params, up4f, maxhw)
+            !call flux_conv(fout%p, fin%p, params, this%fluxfun, maxhw)
+            if(this%flux_scheme_name == "up1") then
+                call flux_conv(fout%p, fin%p, params, up1f, 1)
+            else if(this%flux_scheme_name == "up4") then
+                call flux_conv(fout%p, fin%p, params, up4f, 3)
+            end if
         class default
             print *, "wrong input stvec type in adv_oper_sub"
         end select
@@ -127,8 +137,6 @@ contains
 
     subroutine flux_conv(fout, fin, params, fluxf, hw)
 
-        !use flux_mod,  only: up4f
-
         class(params_t),        intent(in)    :: params
         real(kind=8),           intent(inout) :: fout(params%N,params%N)
         real(kind=8),           intent(in)    :: fin(params%N,params%N)
@@ -146,13 +154,11 @@ contains
         do j=1,N
             do i=0,N
                 flx(i,j) = fluxf(hw,q(i-hw+1:i+hw,j),params%u(i,j))
-                !flx(i,j) = up4f(hw,q(i-hw+1:i+hw,j),params%u(i,j))
             end do
         end do
         do j=0,N
             do i=1,N
                 fly(i,j) = fluxf(hw,q(i,j-hw+1:j+hw),params%v(i,j))
-                !fly(i,j) = up4f(hw,q(i,j-hw+1:j+hw),params%v(i,j))
             end do
         end do
 
