@@ -2,7 +2,7 @@ module operator_mod
 
     use stvec_mod,  only: stvec_abstract_t
     use params_mod, only: params_t
-    use flux_mod,   only: flux_abstract_t
+    use flux_mod,   only: clflux
 
     implicit none
 
@@ -30,12 +30,15 @@ module operator_mod
             class(operator_t),       intent(in)    :: this
             class(stvec_abstract_t), intent(inout) :: fout
             class(stvec_abstract_t), intent(in)    :: fin
-            class(params_t),         intent(in)  :: params
+            class(params_t),         intent(in)    :: params
         end subroutine act_sub_ifc
     end interface
 
+    integer(kind=4), parameter :: maxhw = 4
+
     type, extends(operator_t) :: adv_oper_t
-        class(flux_abstract_t), allocatable :: flux
+        integer(kind=4)                     :: hw
+        procedure(clflux), pointer, nopass  :: fluxfun
         contains
         procedure act_fun => adv_oper_fun
         procedure act_sub => adv_oper_sub
@@ -44,7 +47,7 @@ module operator_mod
 contains
 
     type(adv_oper_t) function init_adv_operator(namfname) result(op)
-        use flux_mod, only: flux_abstract_t, init_flux_up1, init_flux_up4
+        use flux_mod, only: up4f, up1f
         character(*)   :: namfname
         character(256) :: flux_scheme_name="up1"
         namelist /adv/ flux_scheme_name
@@ -54,13 +57,16 @@ contains
         close(117)
 
         if(trim(flux_scheme_name) == "up1") then
-            op%flux = init_flux_up1()
+            op%fluxfun => up1f
+            op%hw = 1
         else if(trim(flux_scheme_name) == "up4") then
-            op%flux = init_flux_up4()
+            op%fluxfun => up4f
+            op%hw = 3
         else
             print *, "Error: unknown flux scheme: "//flux_scheme_name
             stop
         end if
+
     end function init_adv_operator
 
     subroutine adv_oper_sub(this, fout, fin, params)
@@ -78,8 +84,8 @@ contains
         class is (stvec_t)
         select type (fin)
         class is (stvec_t)
-            N = fin%N
-            call flux_conv(fout, fin, params, this%flux)
+            !call flux_conv(fout%p, fin%p, params, this%fluxfun, this%hw)
+            call flux_conv(fout%p, fin%p, params, this%fluxfun, maxhw)
         class default
             print *, "wrong input stvec type in adv_oper_sub"
         end select
@@ -92,6 +98,7 @@ contains
     function adv_oper_fun(this, fin, params) result(fout)
 
         use stvec_mod, only: stvec_t
+        use flux_mod,  only: up4f
 
         class(adv_oper_t),       intent(in)  :: this
         class(stvec_abstract_t), intent(in)  :: fin
@@ -118,41 +125,40 @@ contains
         end select
     end function adv_oper_fun
 
-    subroutine flux_conv(fout, fin, params, flux)
+    subroutine flux_conv(fout, fin, params, fluxf, hw)
 
-        use stvec_mod, only: stvec_t
-        use flux_mod,  only: flux_abstract_t, up4f
+        !use flux_mod,  only: up4f
 
-        class(stvec_t),         intent(inout) :: fout
-        class(stvec_t),         intent(in)    :: fin
         class(params_t),        intent(in)    :: params
-        class(flux_abstract_t), intent(in)    :: flux
+        real(kind=8),           intent(inout) :: fout(params%N,params%N)
+        real(kind=8),           intent(in)    :: fin(params%N,params%N)
+        procedure(clflux)                     :: fluxf
+        integer(kind=4),        intent(in)    :: hw
 
-        real(kind=8)     :: q(-flux%hw+1:params%N+flux%hw, -flux%hw+1:params%N+flux%hw)
+        real(kind=8)     :: q(-hw+1:params%N+hw, -hw+1:params%N+hw)
         real(kind=8)     :: flx(0:params%N,params%N)
         real(kind=8)     :: fly(params%N,0:params%N)
-        integer(kind=4)  :: N, i, j, hw
+        integer(kind=4)  :: N, i, j
 
         N = params%N
-        hw = flux%hw
-        call periodic_bc(q,fin%p,N,hw)
+        call periodic_bc(q,fin,N,hw)
 
         do j=1,N
             do i=0,N
-                flx(i,j) = flux%calc_flux(q(i-hw+1:i+hw,j),params%u(i,j))
+                flx(i,j) = fluxf(hw,q(i-hw+1:i+hw,j),params%u(i,j))
                 !flx(i,j) = up4f(hw,q(i-hw+1:i+hw,j),params%u(i,j))
             end do
         end do
         do j=0,N
             do i=1,N
-                fly(i,j) = flux%calc_flux(q(i,j-hw+1:j+hw),params%v(i,j))
+                fly(i,j) = fluxf(hw,q(i,j-hw+1:j+hw),params%v(i,j))
                 !fly(i,j) = up4f(hw,q(i,j-hw+1:j+hw),params%v(i,j))
             end do
         end do
 
         do j=1,N
             do i=1,N
-                fout%p(i,j) =-(flx(i,j)-flx(i-1,j)+fly(i,j)-fly(i,j-1))/params%dx
+                fout(i,j) =-(flx(i,j)-flx(i-1,j)+fly(i,j)-fly(i,j-1))/params%dx
             end do
         end do
     end subroutine flux_conv
