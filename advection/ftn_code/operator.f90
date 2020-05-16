@@ -41,8 +41,8 @@ module operator_mod
         procedure(clflux), pointer, nopass  :: fluxfun
         character(:), allocatable           :: flux_scheme_name
         contains
-        procedure act_fun => adv_oper_fun
-        procedure act_sub => adv_oper_sub
+        procedure :: act_fun => adv_oper_fun
+        procedure :: act_sub => adv_oper_sub
     end type adv_oper_t
 
 contains

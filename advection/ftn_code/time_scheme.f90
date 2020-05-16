@@ -27,14 +27,14 @@ end interface
 type, extends(timescheme_abstract_t) :: rk4_t
     class(operator_t), allocatable :: oper
     contains
-    procedure step => step_rk4
+    procedure :: step => step_rk4
 end type rk4_t
 
 type, extends(timescheme_abstract_t) :: rk4opt_t
     class(operator_t), allocatable :: oper
     class(stvec_abstract_t), allocatable :: k1,k2,k3,k4,y
     contains
-    procedure step => step_rk4opt
+    procedure :: step => step_rk4opt
 end type rk4opt_t
 
 contains
