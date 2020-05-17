@@ -29,7 +29,6 @@ function init_rk4_opt!(f::stvec_t)
 end
 
 function (ts::rk4_opt!)(f::stvec_t,oper!,dt::Real)
-    println("rk4_opt")
     oper!(ts.k1,f)
     lin_comb!(ts.y,f,ts.k1,1.0,0.5dt)
     oper!(ts.k2,ts.y)

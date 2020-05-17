@@ -7,3 +7,6 @@
 &adv
   flux_scheme_name="up4"
   /
+&testcase
+wf=-1
+/
