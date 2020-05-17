@@ -88,14 +88,15 @@ contains
         class is (stvec_t)
         select type (fin)
         class is (stvec_t)
-            !call flux_conv(fout%p, fin%p, params, this%fluxfun, this%hw)
-            !call flux_conv(fout%p, fin%p, params, up4f, maxhw)
-            !call flux_conv(fout%p, fin%p, params, this%fluxfun, maxhw)
+#ifndef ADV_OPT
+            call flux_conv(fout%p, fin%p, params, this%fluxfun, this%hw)
+#else
             if(this%flux_scheme_name == "up1") then
                 call flux_conv(fout%p, fin%p, params, up1f, 1)
             else if(this%flux_scheme_name == "up4") then
                 call flux_conv(fout%p, fin%p, params, up4f, 3)
             end if
+#endif
         class default
             print *, "wrong input stvec type in adv_oper_sub"
         end select
