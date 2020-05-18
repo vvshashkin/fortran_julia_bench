@@ -13,13 +13,15 @@ function adv_oper!(fout::stvec_t, fin::stvec_t, params::params_t, m::Int, fluxf)
 
     @inbounds for j=1:params.N
         for i=1:params.N+1
-            flx[i,j] = fluxf(m,q[i:i+2m-1,j+m],params.u[i,j])  #simulation of final very optimized code
-            #flx[i,j] = params.u[i,j]*q[i+m-1,j]
+            flx[i,j] = fluxf(m,view(q,i:i+2m-1,j+m),params.u[i,j])
+            #flx[i,j] = fluxf(m,q[i:i+2m-1,j+m],params.u[i,j])     #10x slow-down
+            #flx[i,j] = params.u[i,j]*q[i+m-1,j] #simulation of final very optimized code
         end
     end
     @inbounds for j=1:params.N+1
         for i=1:params.N
-            fly[i,j] = fluxf(m,q[i+m,j:j+2m-1],params.v[i,j])
+            fly[i,j] = fluxf(m,view(q,i+m,j:j+2m-1),params.v[i,j])
+            #fly[i,j] = fluxf(m,q[i+m,j:j+2m-1],params.v[i,j])     #10x slow-down
             #fly[i,j] = params.v[i,j]*q[i,j+m-1] #simulation of final very optimized code
         end
     end
@@ -32,12 +34,12 @@ function adv_oper!(fout::stvec_t, fin::stvec_t, params::params_t, m::Int, fluxf)
     return
 end
 
-@inline function up1(m,q,u)
+@inline function up1(m::Int,q,u)
     za1 = 0.5+0.5sign(u)
     za2 = 1.0-za1
     return @inbounds u*(za1*q[m]+za2*q[m+1])
 end
-@inline function up4(m,q,u)
+@inline function up4(m::Int,q,u)
     za1 = 0.5+0.5sign(u)
     za2 = 1.0-za1
     return @inbounds u*(za1*(3.0q[m+1]+13.0q[m]-5.0q[m-1]+q[m-2])+
