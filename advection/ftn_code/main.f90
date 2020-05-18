@@ -26,7 +26,7 @@ program advection_test
     params = init_params(N)
 
     call init_stvec(f1,params%N,init_f(params))
-    print *, maxval(f1%p), minval(f1%p)
+    print *, "q t=0 max/min:", maxval(f1%p), minval(f1%p)
 
     oper = init_adv_operator("namelist")!adv_oper_t()
     if(trim(time_scheme) == "rk4_opt") then
@@ -43,6 +43,6 @@ program advection_test
         call ts%step(f1,params,dt)
     end do
 
-    print *, maxval(f1%p)! -exp(-0.1_8*it*dt)
+    print *, "q(t= ", Nstep*dt, ") max/min:", maxval(f1%p), minval(f1%p) 
 
 end program advection_test
