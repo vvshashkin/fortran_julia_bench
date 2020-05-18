@@ -90,6 +90,8 @@ contains
         class is (stvec_t)
 #ifndef ADV_OPT
             call flux_conv(fout%p, fin%p, params, this%fluxfun, this%hw)
+            !simulation of final very optimized code
+            !call flux_conv(fout%p, fin%p, params, this%fluxfun, 1)
 #else
             if(this%flux_scheme_name == "up1") then
                 call flux_conv(fout%p, fin%p, params, up1f, 1)
@@ -155,11 +157,13 @@ contains
         do j=1,N
             do i=0,N
                 flx(i,j) = fluxf(hw,q(i-hw+1:i+hw,j),params%u(i,j))
+                !flx(i,j) = params%u(i,j)*q(i,j) !simulation of final code
             end do
         end do
         do j=0,N
             do i=1,N
                 fly(i,j) = fluxf(hw,q(i,j-hw+1:j+hw),params%v(i,j))
+                !fly(i,j) = params%v(i,j)*q(i,j) !simulation of final code
             end do
         end do
 

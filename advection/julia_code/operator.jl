@@ -5,7 +5,7 @@ function adv_oper(fin::stvec_t, params::params_t,m::Int,fluxf)
 end
 function adv_oper!(fout::stvec_t, fin::stvec_t, params::params_t, m::Int, fluxf)
 
-
+    #m=1  #simulation of final very optimized code
     q = periodic_bc(fin.q,params.N,m)
 
     flx = Array{eltype(fin.q)}(undef,params.N+1,params.N)
@@ -13,12 +13,14 @@ function adv_oper!(fout::stvec_t, fin::stvec_t, params::params_t, m::Int, fluxf)
 
     @inbounds for j=1:params.N
         for i=1:params.N+1
-            flx[i,j] = fluxf(m,q[i:i+2m-1,j+m],params.u[i,j])
+            flx[i,j] = fluxf(m,q[i:i+2m-1,j+m],params.u[i,j])  #simulation of final very optimized code
+            #flx[i,j] = params.u[i,j]*q[i+m-1,j]
         end
     end
     @inbounds for j=1:params.N+1
         for i=1:params.N
             fly[i,j] = fluxf(m,q[i+m,j:j+2m-1],params.v[i,j])
+            #fly[i,j] = params.v[i,j]*q[i,j+m-1] #simulation of final very optimized code
         end
     end
 
