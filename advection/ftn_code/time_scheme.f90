@@ -94,14 +94,14 @@ subroutine step_rk4opt(this, f0, params, dt)
     real(kind=8),            intent(in)    :: dt
 
     call this%oper%act_sub(this%k1,f0, params)
-    this%y = f0
-    call this%y%linear_comb(this%k1,1._8,0.5_8*dt)
+
+    call this%y%linear_comb3(f0,this%k1,1._8,0.5_8*dt)
     call this%oper%act_sub(this%k2,this%y, params)
-    this%y = f0
-    call this%y%linear_comb(this%k2,1._8,0.5_8*dt)
+
+    call this%y%linear_comb3(f0,this%k2,1._8,0.5_8*dt)
     call this%oper%act_sub(this%k3,this%y, params)
-    this%y = f0
-    call this%y%linear_comb(this%k3,1._8,dt)
+
+    call this%y%linear_comb3(f0,this%k3,1._8,dt)
     call this%oper%act_sub(this%k4,this%y, params)
 
     call f0%linear_comb(this%k1,1._8,dt/6._8)

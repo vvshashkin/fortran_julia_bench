@@ -18,8 +18,9 @@ module stvec_mod
             !stvec_abstract_t is a component of some type
             procedure, pass(lhs) :: stvec_assign_stvec => stvec_assign_stvec_base
 
-            procedure(linear_comb_ifc), deferred :: linear_comb
-            procedure(smult_ifc),       deferred :: smult
+            procedure(linear_comb_ifc),  deferred :: linear_comb
+            procedure(linear_comb3_ifc), deferred :: linear_comb3
+            procedure(smult_ifc),        deferred :: smult
     end type stvec_abstract_t
 
     interface
@@ -56,6 +57,14 @@ module stvec_mod
             class(stvec_abstract_t), intent(in)    :: other
             real(kind=8),            intent(in)    :: a, b
         end subroutine linear_comb_ifc
+
+        subroutine linear_comb3_ifc(this,f1,f2,a,b)
+            import stvec_abstract_t
+            class(stvec_abstract_t), intent(inout) :: this
+            class(stvec_abstract_t), intent(in)    :: f1, f2
+            real(kind=8),            intent(in)    :: a, b
+        end subroutine linear_comb3_ifc
+
         subroutine smult_ifc(this,a)
             import stvec_abstract_t
             class(stvec_abstract_t), intent(inout) :: this
@@ -76,6 +85,7 @@ module stvec_mod
         procedure, pass(lhs)  :: stvec_assign_stvec
 
         procedure             :: linear_comb
+        procedure             :: linear_comb3
         procedure             :: smult
     end type stvec_t
 
@@ -193,6 +203,31 @@ contains
             stop
         end select
     end subroutine linear_comb
+
+    subroutine linear_comb3(this,f1,f2,a,b)
+        class(stvec_t),          intent(inout) :: this
+        class(stvec_abstract_t), intent(in)    :: f1, f2
+        real(kind=8),            intent(in)    :: a, b
+
+        integer(kind=4) N
+
+        N = this%N
+
+        select type (f1)
+        class is (stvec_t)
+        select type (f2)
+        class is (stvec_t)
+            this%p(1:N,1:N) = a*f1%p(1:N,1:N)+b*f2%p(1:N,1:N)
+        class default
+            print *, "type mismatch in stvec lincomb"
+            stop
+        end select
+        class default
+            print *, "type mismatch in stvec lincomb"
+            stop
+        end select
+    end subroutine linear_comb3
+
     subroutine smult(this,a)
         class(stvec_t), intent(inout) :: this
         real(kind=8),   intent(in)    :: a
