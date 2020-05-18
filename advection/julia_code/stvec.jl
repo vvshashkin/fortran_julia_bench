@@ -7,8 +7,8 @@ Base.:+(f1::stvec_t{T},f2::stvec_t{T}) where(T) = stvec_t{T}(f1.N,f1.q .+ f2.q)
 
 Base.:-(f1::stvec_t{T},f2::stvec_t{T}) where(T) = stvec_t{T}(f1.N,f1.q .- f2.q)
 
-Base.:*(a::Real,f::stvec_t{T}) where(T) = stvec_t{T}(f.N,a*f.q)
-Base.:*(f::stvec_t{T},a::Real) where(T) = stvec_t{T}(f.N,a*f.q)
+Base.:*(a::Real,f::stvec_t{T}) where(T) = stvec_t{T}(f.N,a.*f.q)
+Base.:*(f::stvec_t{T},a::Real) where(T) = stvec_t{T}(f.N,a.*f.q)
 
 Base.:/(f::stvec_t{T},a::Float64) where(T) = stvec_t{T}(f.N,f.q ./ a)
 
