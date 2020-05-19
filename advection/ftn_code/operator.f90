@@ -88,16 +88,16 @@ contains
         class is (stvec_t)
         select type (fin)
         class is (stvec_t)
-#ifndef ADV_OPT
-            call flux_conv(fout%p, fin%p, params, this%fluxfun, this%hw)
-            !simulation of final very optimized code
-            !call flux_conv(fout%p, fin%p, params, this%fluxfun, 1)
-#else
+#ifdef ADV_OPT
             if(this%flux_scheme_name == "up1") then
                 call flux_conv(fout%p, fin%p, params, up1f, 1)
             else if(this%flux_scheme_name == "up4") then
                 call flux_conv(fout%p, fin%p, params, up4f, 3)
             end if
+#elif HARD_CODE
+            call flux_conv(fout%p, fin%p, params, this%fluxfun, 3)
+#else
+            call flux_conv(fout%p, fin%p, params, this%fluxfun, this%hw)
 #endif
         class default
             print *, "wrong input stvec type in adv_oper_sub"
@@ -150,20 +150,35 @@ contains
         real(kind=8)     :: flx(0:params%N,params%N)
         real(kind=8)     :: fly(params%N,0:params%N)
         integer(kind=4)  :: N, i, j
+#ifdef HARD_CODE
+        real(kind=8)     :: za1, za2
+#endif
 
         N = params%N
         call periodic_bc(q,fin,N,hw)
 
         do j=1,N
             do i=0,N
+#ifndef HARD_CODE
                 flx(i,j) = fluxf(hw,q(i-hw+1:i+hw,j),params%u(i,j))
-                !flx(i,j) = params%u(i,j)*q(i,j) !simulation of final code
+#else
+                za1 = .5_8+sign(.5_8,params%u(i,j))
+                za2 = 1._8-za1
+                flx(i,j) = params%u(i,j)*(za1*(3.0_8*q(i+1,j)+13.0_8*q(i  ,j)-5.0_8*q(i-1,j)+q(i-2,j))+ &
+                                          za2*(3.0_8*q(i  ,j)+13.0_8*q(i+1,j)-5.0_8*q(i+2,j)+q(i+3,j)))/12.0_8
+#endif
             end do
         end do
         do j=0,N
             do i=1,N
+#ifndef HARD_CODE
                 fly(i,j) = fluxf(hw,q(i,j-hw+1:j+hw),params%v(i,j))
-                !fly(i,j) = params%v(i,j)*q(i,j) !simulation of final code
+#else
+                za1 = .5_8+sign(.5_8,params%v(i,j))
+                za2 = 1._8-za1
+                fly(i,j) = params%v(i,j)*(za1*(3.0_8*q(i,j+1)+13.0_8*q(i,j  )-5.0_8*q(i,j-1)+q(i,j-2))+ &
+                                          za2*(3.0_8*q(i,j  )+13.0_8*q(i,j+1)-5.0_8*q(i,j+2)+q(i,j+3)))/12.0_8
+#endif
             end do
         end do
 
