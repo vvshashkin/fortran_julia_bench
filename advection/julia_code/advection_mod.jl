@@ -43,28 +43,6 @@ function adv(;N=1000,dt=0.0005,Xmax=1.0,nstep=1,tscheme=:rk4,flux=:up4,type=Floa
     return f1
 end
 
-function test1(iter=100,N=1000)
-    f1 = stvec_t{Float64}(N,rand(N,N))
-    f2 = 0.5*f1
-
-    for it=1:iter
-        f1 = f1+f2
-        f2 = 0.5*f2
-    end
-    println(maximum(f1.q))
-end
-
-function test2(iter=100,N=1000)
-    f1 = stvec_t{Float64}(N,rand(N,N))
-    f2 = 0.5*f1
-
-    for it=1:iter
-        lin_comb!(f1,f1,f2,1.0,0.5)
-        f2 = 0.5*f2
-    end
-    println(maximum(f1.q))
-end
-
 function initq(params, q)
     Q = Array{Float64}(undef,params.N, params.N)
     for j=1:params.N

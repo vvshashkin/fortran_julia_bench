@@ -14,15 +14,26 @@ function adv_oper!(fout::stvec_t, fin::stvec_t, params::params_t, m::Int, fluxf)
     @inbounds for j=1:params.N
         for i=1:params.N+1
             flx[i,j] = fluxf(m,view(q,i:i+2m-1,j+m),params.u[i,j])
+            #hardcoded up4, slightly slower (WTF!?)
+            #za1 = 0.5+0.5sign(params.u[i,j])
+            #za2 = 1.0-za1
+            #flx[i,j] = params.u[i,j]*(za1*(3.0q[i+m,j+m]+13.0q[i+m-1,j+m]-5.0q[i+m-2,j+m]+q[i+m-3,j+m])+
+            #                          za2*(3.0q[i+m-1,j+m]+13.0q[i+m,j+m]-5.0q[i+m+1,j+m]+q[i+m+2,j+m]))/12.0
+
             #flx[i,j] = fluxf(m,q[i:i+2m-1,j+m],params.u[i,j])     #10x slow-down
-            #flx[i,j] = params.u[i,j]*q[i+m-1,j] #simulation of final very optimized code
         end
     end
     @inbounds for j=1:params.N+1
         for i=1:params.N
             fly[i,j] = fluxf(m,view(q,i+m,j:j+2m-1),params.v[i,j])
+
+            #hardcoded up4, slightly slower (WTF!?)
+            #za1 = 0.5+0.5sign(params.v[i,j])
+            #za2 = 1.0-za1
+            #fly[i,j] = params.v[i,j]*(za1*(3.0q[i+m,j+m]+13.0q[i+m,j+m-1]-5.0q[i+m,j+m-2]+q[i+m,j+m-3])+
+            #                          za2*(3.0q[i+m,j+m-1]+13.0q[i+m,j+m]-5.0q[i+m,j+m+1]+q[i+m,j+m+2]))/12.0
+
             #fly[i,j] = fluxf(m,q[i+m,j:j+2m-1],params.v[i,j])     #10x slow-down
-            #fly[i,j] = params.v[i,j]*q[i,j+m-1] #simulation of final very optimized code
         end
     end
 
