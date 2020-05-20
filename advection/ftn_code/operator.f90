@@ -48,7 +48,7 @@ module operator_mod
 contains
 
     type(adv_oper_t) function init_adv_operator(namfname) result(op)
-        use flux_mod, only: up4f, up1f
+        use flux_mod, only: up4f, up1f, weno5f
         character(*)   :: namfname
         character(256) :: flux_scheme_name="up1"
         namelist /adv/ flux_scheme_name
@@ -63,6 +63,9 @@ contains
         else if(trim(flux_scheme_name) == "up4") then
             op%fluxfun => up4f
             op%hw = 3
+        else if(trim(flux_scheme_name) == "weno5") then
+            op%fluxfun => weno5f
+            op%hw = 3
         else
             print *, "Error: unknown flux scheme: "//flux_scheme_name
             stop
@@ -75,7 +78,7 @@ contains
     subroutine adv_oper_sub(this, fout, fin, params)
 
         use stvec_mod, only: stvec_t
-        use flux_mod,  only: up1f,up4f
+        use flux_mod,  only: up1f,up4f,weno5f
 
         class(adv_oper_t),       intent(in)    :: this
         class(stvec_abstract_t), intent(inout) :: fout
@@ -93,6 +96,8 @@ contains
                 call flux_conv(fout%p, fin%p, params, up1f, 1)
             else if(this%flux_scheme_name == "up4") then
                 call flux_conv(fout%p, fin%p, params, up4f, 3)
+            else if(this%flux_scheme_name == "weno5") then
+                call flux_conv(fout%p, fin%p, params, weno5f, 3)
             end if
 #elif HARD_CODE
             call flux_conv(fout%p, fin%p, params, this%fluxfun, 3)

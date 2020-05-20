@@ -15,6 +15,7 @@ contains
         type(params_t)              :: params
 
         integer(kind=4) :: wf = 1, fdist = 1
+        real(kind=8)    :: zw
         namelist /testcase/ wf, fdist
 
         open(117,file="namelist", form="formatted")
@@ -31,9 +32,28 @@ contains
         if(wf == 1) then
             params%u(0:N,1:N) = 1._8
             params%v(1:N,0:N) = 1._8
-        else
+        else if(wf == -1) then
             params%u(0:N,1:N) = -1._8
-            params%v(1:N,0:N) = -1._8
+            params%v(1:N,0:N) =  1._8
+        else if(wf == 2) then
+            do j=1,N
+                do i=0,N
+                    zw = max(0._8, &
+                             1.0_8-2.0_8*sqrt((i*params%dx-0.5_8)**2+ &
+                                             ((j-0.5_8)*params%dx-0.5_8)**2))
+                    params%u(i,j) = ((j-0.5)*params%dx-0.5_8)*zw
+                end do
+            end do
+            do j=0,N
+                do i=1,N
+                    zw = max(0._8, &
+                             1.0_8-2.0_8*sqrt(((i-0.5_8)*params%dx-0.5_8)**2+ &
+                                             (j*params%dx-0.5_8)**2))
+                    params%v(i,j) =-((i-0.5)*params%dx-0.5_8)*zw
+                end do
+            end do
+        else
+            print *, "Error: unknown wind-field"
         end if
     end function init_params
 
