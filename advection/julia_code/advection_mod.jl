@@ -12,25 +12,25 @@ function adv(;N=1000,dt=0.0005,Xmax=1.0,nstep=1,tscheme=:rk4,flux=:up4,type=Floa
     params = params_t{type}(convert(type,Xmax),N,u,v)
     f1     = stvec_t{type}(N,initq(params, q))
 
+    if(flux == :up1)
+        fluxfun = up1
+        halo_width = 1
+    elseif(flux == :up4)
+        fluxfun = up4
+        halo_width = 3
+    elseif(flux == :weno5)
+        fluxfun = weno5
+        halo_width = 3
+    else
+        println("Error: unknown flux scheme ",flux)
+        return
+    end
+
     if(tscheme==:rk4)
-        if(flux == :up1)
-            oper = f-> adv_oper(f,params,1,up1)
-        elseif(flux == :up4)
-            oper = f-> adv_oper(f,params,3,up4)
-        else
-            println("Error: unknown flux scheme ",flux)
-            return
-        end
+        oper = f-> adv_oper(f,params,halo_width,fluxfun)
         ts! = (f1,oper,dt) -> rk4!(f1,oper,dt)
     elseif(tscheme == :rk4_opt)
-        if(flux == :up1)
-            oper = (f,p)-> adv_oper!(f,p,params,1,up1)
-        elseif(flux == :up4)
-            oper = (f,p)-> adv_oper!(f,p,params,3,up4)
-        else
-            println("Error: unknown flux scheme ",flux)
-            return
-        end
+        oper = (f,p)-> adv_oper!(f,p,params,halo_width,fluxfun)
         ts! = (f,oper!,dt) -> init_rk4_opt!(f1)(f,oper!,dt)
     else
         println("Error: unknown time-steping scheme ",tscheme)

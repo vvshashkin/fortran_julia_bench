@@ -56,6 +56,27 @@ end
     return @inbounds u*(za1*(3.0q[m+1]+13.0q[m]-5.0q[m-1]+q[m-2])+
                         za2*(3.0q[m]+13.0q[m+1]-5.0q[m+2]+q[m+3]))/12.0
 end
+@inline function weno5(m::Int,q,u)
+  a1 = 0.5*(1+sign(u))
+  a2 = 0.5*(1-sign(u))
+  a = a1*q[m-2]+a2*q[m+3]
+  b = a1*q[m-1]+a2*q[m+2]
+  c = a1*q[m  ]+a2*q[m+1]
+  d = a1*q[m+1]+a2*q[m]
+  e = a1*q[m+2]+a2*q[m-1]
+
+  q1 = (2.0a-7.0b+11.0c)/6.0
+  q2 = (-b+5.0c+2d)/6.0
+  q3 = (2.0c+5.0d-e)/6.0
+  s1 = (13.0/12.0)*(a-2.0b+c)^2 + 0.25(a-4.0b+3.0c)^2
+  s2 = (13.0/12.0)*(b-2.0c+d)^2 + 0.25(d-b)^2
+  s3 = (13.0/12.0)*(c-2.0d+e)^2 + 0.25(3.0c-4.0d+e)^2
+  eps = 1e-6
+  w1 = 0.1/(eps+s1)^2
+  w2 = 0.6/(eps+s2)^2
+  w3 = 0.3/(eps+s3)^2
+  return u*(w1*q1+w2*q2+w3*q3)/(w1+w2+w3)
+end
 
 function periodic_bc(q,N,m)
     q1 = Array{eltype(q)}(undef,N+2m,N+2m)
