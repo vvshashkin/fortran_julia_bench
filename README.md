@@ -55,6 +55,20 @@ time ./a.out
 Fortran compilation flags are `ifort -O3 -ipo` and `gfortran -O3 -flto`
 
 @inbounds and @inline are placed here and there in the Julia code to increase speed.
+```bash
+$ ifort --version
+ifort (IFORT) 19.1.0.166 20191121
+Copyright (C) 1985-2019 Intel Corporation.  All rights reserved.
+
+$ gfortran --version
+GNU Fortran (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Copyright (C) 2017 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+$ julia --version
+julia version 1.3.1
+```
 
 ### 4-th order upstream flux test
 
@@ -114,3 +128,52 @@ N=1000, nstep=100, tscheme=k4_opt, flux=weno5
 |           | 12.1 (*see below)  |           |         |
 
 *) -fp-model fast -no-prec-div
+
+### Results summary
+Currently it looks like Julia runs indeed! The speed of computations in this problems is almost the same as for Fortran compiled with ifort. Actually, the considered problem tests the efficiency of small-function inlining and optimization. The performance critical code is the following:
+```julia
+    @inbounds for j=1:params.N
+        for i=1:params.N+1
+            flx[i,j] = fluxf(m,view(q,i:i+2m-1,j+m),params.u[i,j])
+            #flx[i,j] = fluxf(m,q[i:i+2m-1,j+m],params.u[i,j])     #10x slow-down
+        end
+    end
+```
+```julia
+@inline function up4(m::Int,q,u)
+    za1 = 0.5+0.5sign(u)
+    za2 = 1.0-za1
+    return @inbounds u*(za1*(3.0q[m+1]+13.0q[m]-5.0q[m-1]+q[m-2])+
+                        za2*(3.0q[m]+13.0q[m+1]-5.0q[m+2]+q[m+3]))/12.0
+end
+```
+Fortran:
+```fortran
+        do j=1,N
+            do i=0,N
+                flx(i,j) = fluxf(hw,q(i-hw+1:i+hw,j),params%u(i,j))
+            end do
+        end do
+```
+```fortran
+    real(kind=8) function up4f(hw, q, u) result(fl)
+        integer(kind=4), intent(in) :: hw
+        real(kind=8),    intent(in) :: q(-hw+1:hw)
+        real(kind=8),    intent(in) :: u
+
+        real(kind=8)             :: za1, za2
+
+        za1 = .5_8+sign(.5_8,u)
+        za2 = 1._8-za1
+        fl = u*(za1*(3.0_8*q(1)+13.0_8*q(0)-5.0_8*q(-1)+q(-2))+ &
+                za2*(3.0_8*q(0)+13.0_8*q(1)-5.0_8*q( 2)+q( 3)))/12.0_8
+    end function up4f
+```
+Julia inliner is very good, it manages to generate code as fast as hard-coded version of up4 (and even faster). The ifort small-function code is 30-50% slower as compared to the hardcoded version.
+
+Fortran old style non-object oriented code is not significantly faster than object-oriented one with ifort, unless the flux is implemented as derived type (it kills all interprocedural optimization). GNU fortran is 2 times slower than Intel fortran for non-object-oriented code and completely fails optimization with all these derived types :(.
+
+(Was not shown) Attempt to implement "natural" stvec arithmetics (`f1=a*f2+b*f3`) with fortran resulted in about 3 seconds slower code (up4 test) as compared to less elegant but robust `call f%lincomb3(f1,f2,a,b)`. Try tscheme="rk4" instead of "rk4_opt" to compare.
+
+## Running the tests
+To run the tests on your machine just clone the repository and run `./run_test.sh` in advection/ftn_code directory and `julia run_test.jl` in advection/julia_code. If you don't have ifort, please, modify run_test.sh file accordingly.
