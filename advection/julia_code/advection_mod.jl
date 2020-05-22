@@ -1,5 +1,7 @@
 module advection
 
+using LoopVectorization
+
 include("params.jl")
 include("stvec.jl")
 include("operator.jl")

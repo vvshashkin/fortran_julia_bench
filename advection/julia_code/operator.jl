@@ -12,7 +12,7 @@ function adv_oper!(fout::stvec_t, fin::stvec_t, params::params_t, m::Int, fluxf)
     fly = Array{eltype(fin.q)}(undef,params.N,params.N+1)
 
     @inbounds for j=1:params.N
-        for i=1:params.N+1
+        @simd for i=1:params.N+1
             flx[i,j] = fluxf(m,view(q,i:i+2m-1,j+m),params.u[i,j])
             #hardcoded up4, slightly slower (WTF!?)
             #za1 = 0.5+0.5sign(params.u[i,j])
@@ -24,7 +24,7 @@ function adv_oper!(fout::stvec_t, fin::stvec_t, params::params_t, m::Int, fluxf)
         end
     end
     @inbounds for j=1:params.N+1
-        for i=1:params.N
+        @simd for i=1:params.N
             fly[i,j] = fluxf(m,view(q,i+m,j:j+2m-1),params.v[i,j])
 
             #hardcoded up4, slightly slower (WTF!?)
@@ -37,9 +37,10 @@ function adv_oper!(fout::stvec_t, fin::stvec_t, params::params_t, m::Int, fluxf)
         end
     end
 
+    dx = params.dx
     @inbounds for j=1:params.N
-        for i=1:params.N
-            fout.q[i,j] = -(flx[i+1,j]-flx[i,j]+fly[i,j+1]-fly[i,j])/params.dx
+        @simd for i=1:params.N
+            fout.q[i,j] = -(flx[i+1,j]-flx[i,j]+fly[i,j+1]-fly[i,j])/dx
         end
     end
     return
@@ -81,11 +82,11 @@ end
 function periodic_bc(q,N,m)
     q1 = Array{eltype(q)}(undef,N+2m,N+2m)
 
-    @inbounds q1[m+1:m+N,m+1:m+N] .= q[1:N,1:N]
-    @inbounds q1[1:m,m+1:m+N] .= q[N-m+1:N,1:N]
-    @inbounds q1[N+m+1:N+2m,m+1:m+N]  .= q[1:m,1:N]
-    @inbounds q1[1:N+2m,1:m] .= q1[1:N+2m,N+1:N+m]
-    @inbounds q1[1:N+2m,N+m+1:N+2m] .= q1[1:N+2m,m+1:2m]
+    @inbounds q1[m+1:m+N,m+1:m+N] .= view(q,1:N,1:N)#q[1:N,1:N]
+    @inbounds q1[1:m,m+1:m+N] .= view(q,N-m+1:N,1:N)#q[N-m+1:N,1:N]
+    @inbounds q1[N+m+1:N+2m,m+1:m+N]  .= view(q,1:m,1:N)#q[1:m,1:N]
+    @inbounds q1[1:N+2m,1:m] .= view(q1,1:N+2m,N+1:N+m)#q1[1:N+2m,N+1:N+m]
+    @inbounds q1[1:N+2m,N+m+1:N+2m] .= view(q1,1:N+2m,m+1:2m)#q1[1:N+2m,m+1:2m]
 
     return q1
 end

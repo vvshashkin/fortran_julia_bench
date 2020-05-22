@@ -13,7 +13,12 @@ Base.:*(f::stvec_t{T},a::Real) where(T) = stvec_t{T}(f.N,a.*f.q)
 Base.:/(f::stvec_t{T},a::Float64) where(T) = stvec_t{T}(f.N,f.q ./ a)
 
 function lin_comb!(f0::stvec_t,f1::stvec_t, f2::stvec_t, a::Real, b::Real)
-    f0.q .= a.*f1.q.+b.*f2.q
+    #@avx f0.q .= a.*f1.q.+b.*f2.q
+    @inbounds for j=1:f0.N
+        @simd for i=1:f0.N
+            f0.q[i,j] = a*f1.q[i,j]+b*f2.q[i,j]
+        end
+    end
     return
 end
 

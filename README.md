@@ -113,18 +113,18 @@ Code versions:
 
 |code verion       |     1   | 2        |     3    |
 |------------------|---------|----------|----------|
-|runtime (s)       | 4.0     | 4.5      |   ~50    |
+|runtime (s)       | 3.3     | 3.3      |   ~50    |
 
 Julia code versions:
   1. basic version
-  2. hardcoded up4 flux (slower than function, how this is possible?)
+  2. hardcoded up4 flux
   3. using array sections instead of array views as argument to flux function (10x slow down)
 
 ### Weno5 test
 N=1000, nstep=100, tscheme=k4_opt, flux=weno5
 | ifort (function pointer)    | ifort (if/then/else) | gfortran (if/then/else) | julia (basic)  |
 |-------------------------------|----------------------|-------------------------|----------------|
-| 12.1      | 9.9               | 23.3      |  14.6   |
+| 12.1      | 9.9               | 23.3      |  13.8   |
 
 *) -fp-model fast -no-prec-div
 
