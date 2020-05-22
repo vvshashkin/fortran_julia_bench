@@ -13,7 +13,7 @@ where <img src="https://render.githubusercontent.com/render/math?math=q"> is the
 
 The domain is square of 1x1 size with biperiodic boundary conditions.
 
-The problem can be considered as the reduction of real hydrodynamics-solver code for benchmarking purposes, also one can think of it as a practical task for numerical-methods-in-hydrodynamics students. 
+The problem can be considered as the reduction of real hydrodynamics-solver code for benchmarking purposes, also one can think of it as a practical task for numerical-methods-in-hydrodynamics students.
 
 ## Solution method
 The advection equation is discretized in space on the quadrilater grid with NxN cells. Finite-differences / finite-volume method gives the following equation for the evolution of tracer density in i,j-th cell:
@@ -36,7 +36,7 @@ To meet these requirements the following abstractions are separated:
 | Time integration scheme | derived type with step method     | function/callable struct q1 = step(q0, operator,dt)        |
 | RHS of the problem      | operator_t derived type           | rhs=operator(q0)                |
 | State vector            | derived type with basic arithmetic operations defined (extentions of stvec abstract class) | struct with basic arithmetic operations defined                |
-| Flux                    | function compatible with clflux abstract function interface |  function                      | 
+| Flux                    | function compatible with clflux abstract function interface |  function                      |
 
 The specific choice of time integration and flux schemes is controlled by namelist parameters (Fortran) and symbol-type arguments passed to the main function of Julia code. Abstract types and interfaces in Fortran code allows simple implementation and usage of different time-stepping schemes and fluxes. Duck-typing helps Julia to be flexible without explicitly defining interfaces.
 
@@ -44,7 +44,7 @@ The resulting Fortran code contains ~650 lines, Julia code is shorter (~240 line
 
 ## Results
 ### General remarks
-Julia run-time is measured by @btime. Fortran run time is measures by runing 
+Julia run-time is measured by @btime. Fortran run time is measures by runing
 
 ```
 time ./a.out
@@ -52,7 +52,7 @@ time ./a.out
 
 3-5 times and averaging the results (user+system).
 
-Fortran compilation flags are `ifort -O3 -ipo` and `gfortran -O3 -flto`
+Fortran compilation flags are `ifort -fast` (the same as `-O3 -ipo -no-prec-div -fp-model fast=2`) and `gfortran -Ofastgfortran`
 
 @inbounds and @inline are placed here and there in the Julia code to increase speed.
 ```bash
@@ -79,7 +79,7 @@ Parameters: N=1000, tscheme=rk4_opt, flux=up4, nstep=100
 |Compiler                        | ifort | ifort  | ifort | gfortran | gfortran | gfortran  |
 |--------------------------------|--------|--------|-------|---------|----------|-----------|
 |Code version (see comment below)|   1    |    2   |   3   |      1  |     2    |      3    |
-|Run time(s)                     | 6.9    | 4.2    | 3.2    | 16.4   | 14.5     |  5.0      |
+|Run time(s)                     | 6.2    | 3.9    | 2.6   | 14.1    | 14.1     |  3.0      |
 
 Code versions:
   1. flux as function pointer in the operator type:
@@ -103,7 +103,7 @@ call flux_conv(fout%p, fin%p, params, this%fluxfun, this%hw)
 |Compiler                        |  ifort1 | ifort2 | gfortran1 | gfortran2|
 |--------------------------------|---------|--------|-----------|----------|
 |Code version (see comment below)|   1     |    2   |   1       |      2   |
-|  Run time (s)                  | 3.0     | 4.5    | 5.8       | 15.0     |
+|  Run time (s)                  | 2.5     | 3.8    | 2.8       | 12.0     |
 
 Code versions:
   1. hard-coded flux
@@ -124,8 +124,7 @@ Julia code versions:
 N=1000, nstep=100, tscheme=k4_opt, flux=weno5
 | ifort (function pointer)    | ifort (if/then/else) | gfortran (if/then/else) | julia (basic)  |
 |-------------------------------|----------------------|-------------------------|----------------|
-| 14.3      | 12.7              | 77.2      |  14.6   |
-|           | 12.1 (*see below)  |           |         |
+| 12.1      | 9.9               | 23.3      |  14.6   |
 
 *) -fp-model fast -no-prec-div
 
@@ -171,7 +170,7 @@ Fortran:
 ```
 Julia inliner is very good, it manages to generate code as fast as hard-coded version of up4 (and even faster). The ifort small-function code is 30-50% slower as compared to the hardcoded version.
 
-Fortran old style non-object oriented code is not significantly faster than object-oriented one with ifort, unless the flux is implemented as derived type (it kills all interprocedural optimization). GNU fortran is 2 times slower than Intel fortran for non-object-oriented code and completely fails optimization with all these derived types :(.
+Fortran old style non-object oriented code is not significantly faster than object-oriented one with ifort, unless the flux is implemented as derived type (it kills all interprocedural optimization). GNU fortran is only slightly slower than Intel fortran for simple code and completely fails optimization when faced with some problems like small-function inlining and/or all these derived types :(.
 
 (Was not shown) Attempt to implement "natural" stvec arithmetics (`f1=a*f2+b*f3`) with fortran resulted in about 3 seconds slower code (up4 test) as compared to less elegant but robust `call f%lincomb3(f1,f2,a,b)`. Try tscheme="rk4" instead of "rk4_opt" to compare.
 

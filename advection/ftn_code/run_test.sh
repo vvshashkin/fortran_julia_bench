@@ -4,25 +4,31 @@ echo "test with following setup:"
 cat namelist
 
 echo ""
-echo "ifort basic variant:"
-ifort -O3 -cpp params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90 -ipo
+ifort -fast -cpp params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90 &&
+echo "ifort basic variant:" &&
 time ./a.out
-rm a.out
 
 echo ""
-echo "ifort with optimized code for improved inlining/ipo:"
-ifort -O3 -cpp -DADV_OPT params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90 -ipo
+ifort -fast -cpp -DADV_OPT params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90 &&
+echo "ifort with optimized code for improved inlining/ipo:" &&
 time ./a.out
-rm a.out
 
 echo ""
-echo "gfortran basic variant:"
-gfortran -O3 -cpp -flto params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90
+ifort -fast -cpp -DHARD_CODE params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90 &&
+echo "ifort with hardcoded up4 flux:" &&
 time ./a.out
-rm a.out
 
 echo ""
-echo "gfortran with optimized code for improved inlining/ipo:"
-gfortran -O3 -flto -cpp -DADV_OPT params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90
+gfortran -Ofast -cpp params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90 &&
+echo "gfortran basic variant:" &&
 time ./a.out
-rm a.out
+
+echo ""
+gfortran -Ofast -cpp -DADV_OPT params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90 &&
+echo "gfortran with optimized code for improved inlining/ipo:" &&
+time ./a.out
+
+echo ""
+gfortran -Ofast -cpp -DHARD_CODE params.f90 stvec_mod.f90 flux.f90 operator.f90 time_scheme.f90 main.f90 &&
+echo "gfortran with hardcoded up4 flux:" &&
+time ./a.out
